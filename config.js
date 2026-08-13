@@ -1,3 +1,3 @@
 window.LUNA_CONFIG = Object.freeze({
-  sheetCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTpEuqUi4WT4V0EhZ7v7klopaRgpVzMmmhMDqIC4njUU322i-tWU9kNW5jr_m9PQi18YzqiZH6LFiSK/pub?gid=1514190748&single=true&output=csv"
+  sheetCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSjoTbv21E_B2YP6ZP-alU2pmVLh5TwEhfur7Fw2Gb_CafTVa34AfY8n4yre17iyOeTkA0yjeemMgN7/pub?gid=413386860&single=true&output=csv"
 });
