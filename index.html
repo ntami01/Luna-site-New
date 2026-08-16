@@ -676,6 +676,31 @@
       }
     }
 
+
+    /* Site image manager */
+    .managed-image-slot:empty { display: none; }
+    .managed-image-slot {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0 var(--side) clamp(46px, 7vw, 92px);
+    }
+    .managed-site-image {
+      margin: 0 auto;
+    }
+    .managed-site-image img {
+      display: block;
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+    }
+    .managed-site-image--75 { width: 75%; }
+    .managed-site-image--50 { width: 50%; }
+    @media (max-width: 680px) {
+      .managed-site-image,
+      .managed-site-image--75,
+      .managed-site-image--50 { width: 100%; }
+    }
+
   </style>
 </head>
 <body>
@@ -700,7 +725,9 @@
         <h1 class="hero-logo">Luna</h1>
       </div>
     </section>
+    <div class="managed-image-slot" data-site-image-slot="HEROの下"></div>
 
+    <div class="managed-image-slot" data-site-image-slot="COLLECTIONの上"></div>
     <section class="section" id="collection" aria-labelledby="collection-title">
       <div class="section-head reveal">
         <h2 id="collection-title">Collection</h2>
@@ -708,7 +735,9 @@
       </div>
       <div class="collection-grid" id="collectionGrid"></div>
     </section>
+    <div class="managed-image-slot" data-site-image-slot="COLLECTIONの下"></div>
 
+    <div class="managed-image-slot" data-site-image-slot="ABOUTの上"></div>
     <section class="section section--dark reveal" id="about" aria-labelledby="about-title">
       <div class="about-grid">
         <figure class="about-visual">
@@ -720,6 +749,10 @@
         </div>
       </div>
     </section>
+    <div class="managed-image-slot" data-site-image-slot="ABOUTの下"></div>
+
+    <div class="managed-image-slot" data-site-image-slot="INSTAGRAMの上"></div>
+
 
     <section class="section reveal" id="instagram" aria-labelledby="instagram-title">
       <div class="instagram-block">
@@ -730,6 +763,8 @@
         <a class="instagram-link" href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagramを開く（アカウントURL未設定）">INSTAGRAM / DM ORDER</a>
       </div>
     </section>
+    <div class="managed-image-slot" data-site-image-slot="CONTACTの上"></div>
+
 
     <section class="section reveal" id="contact" aria-labelledby="contact-title">
       <div class="contact-block">
@@ -754,8 +789,12 @@
         </form>
       </div>
     </section>
+    <div class="managed-image-slot" data-site-image-slot="CONTACTの下"></div>
+
 
   </main>
+
+  <div class="managed-image-slot" data-site-image-slot="FOOTERの上"></div>
 
   <footer class="site-footer">
     <div>Luna</div>
@@ -786,6 +825,7 @@
   </div>
 
   <script src="config.js"></script>
+  <script src="site-images-config.js"></script>
   <script>
     /*
       PRODUCT MANAGEMENT
@@ -903,7 +943,12 @@
         });
       });
 
-      managed.sort((a, b) => a.order - b.order || a.id.localeCompare(b.id, 'ja'));
+      managed.sort((a, b) => {
+        const aBracelet = String(a.category || '').trim().toUpperCase() === 'BRACELET';
+        const bBracelet = String(b.category || '').trim().toUpperCase() === 'BRACELET';
+        if (aBracelet !== bBracelet) return aBracelet ? 1 : -1;
+        return a.order - b.order || a.id.localeCompare(b.id, 'ja');
+      });
       products = managed;
       productsById = new Map(managed.map(product => [product.id, product]));
       return managed;
@@ -1048,6 +1093,98 @@
         showProductLoadError(error);
       }
     })();
+
+    /*
+      SITE IMAGE MANAGEMENT
+      Googleスプレッドシート「サイト画像管理」をCSV公開し、
+      site-images-config.js の siteImageCsvUrl に1回だけ設定します。
+      画像ファイルは GitHub の images/site/ に置きます。
+    */
+    const SITE_IMAGE_CSV_URL = String(window.LUNA_SITE_IMAGES?.siteImageCsvUrl || '').trim();
+
+    function siteImagePath(filename) {
+      const value = String(filename || '').trim();
+      if (!value) return '';
+      if (/^(data:|https?:\/\/|\/)/i.test(value)) return value;
+      return `images/site/${encodeURIComponent(value).replace(/%2F/gi, '/')}`;
+    }
+
+    function managedImageWidthClass(value) {
+      const width = String(value || '').trim();
+      if (width === '横幅50%') return 'managed-site-image--50';
+      if (width === '横幅75%') return 'managed-site-image--75';
+      return '';
+    }
+
+    function renderManagedSiteImages(items) {
+      document.querySelectorAll('.managed-image-slot').forEach(slot => { slot.innerHTML = ''; });
+
+      const aboutImage = document.querySelector('.about-visual img');
+      const aboutItem = items.find(item => item.place === 'ABOUT');
+      if (aboutItem && aboutImage) {
+        aboutImage.src = siteImagePath(aboutItem.filename);
+        if (aboutItem.alt) aboutImage.alt = aboutItem.alt;
+      }
+
+      items
+        .filter(item => item.place !== 'ABOUT')
+        .forEach(item => {
+          const slot = document.querySelector(`[data-site-image-slot="${CSS.escape(item.place)}"]`);
+          if (!slot) return;
+
+          const figure = document.createElement('figure');
+          figure.className = `managed-site-image ${managedImageWidthClass(item.pcWidth)}`.trim();
+
+          const image = document.createElement('img');
+          image.src = siteImagePath(item.filename);
+          image.alt = item.alt || '';
+          image.loading = 'lazy';
+
+          figure.appendChild(image);
+          slot.appendChild(figure);
+        });
+    }
+
+    async function loadManagedSiteImages() {
+      if (!SITE_IMAGE_CSV_URL || SITE_IMAGE_CSV_URL.includes('PASTE_')) return;
+
+      const response = await fetch(normalizedCsvUrl(SITE_IMAGE_CSV_URL), {
+        cache: 'no-store',
+        credentials: 'omit'
+      });
+      if (!response.ok) throw new Error(`サイト画像データ取得エラー: ${response.status}`);
+
+      const rows = parseCsv(await response.text());
+      if (rows.length < 2) return;
+
+      const headers = rows[0].map(value => value.trim());
+      const index = Object.fromEntries(headers.map((name, i) => [name, i]));
+      const required = ['表示順','画像ID','表示','配置場所','画像ファイル名','画像の説明（alt）','PC表示','スマホ表示'];
+      const missing = required.filter(name => !(name in index));
+      if (missing.length) throw new Error(`サイト画像管理シートの列名が不足しています: ${missing.join(', ')}`);
+
+      const getValue = (row, name) => String(row[index[name]] ?? '').trim();
+      const items = rows.slice(1)
+        .map(row => ({
+          order: Number(getValue(row, '表示順')) || 9999,
+          id: getValue(row, '画像ID'),
+          enabled: getValue(row, '表示').toUpperCase() === 'ON',
+          place: getValue(row, '配置場所'),
+          filename: getValue(row, '画像ファイル名'),
+          alt: getValue(row, '画像の説明（alt）'),
+          pcWidth: getValue(row, 'PC表示'),
+          mobileWidth: getValue(row, 'スマホ表示')
+        }))
+        .filter(item => item.enabled && item.place && item.filename)
+        .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id, 'ja'));
+
+      renderManagedSiteImages(items);
+    }
+
+    loadManagedSiteImages().catch(error => {
+      console.error('サイト画像管理の読み込みに失敗しました。既存サイト表示は維持します。', error);
+    });
+
   </script>
 </body>
 </html>
