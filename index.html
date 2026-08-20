@@ -772,7 +772,7 @@
           <h2 id="contact-title">Contact</h2>
           <p>商品についてのご質問・お問い合わせはこちらからご連絡ください。</p>
         </div>
-        <form class="contact-form" action="mailto:luna.handmade813@gmail.com" method="post" enctype="text/plain">
+        <form class="contact-form" id="contactForm">
           <div class="contact-field">
             <label for="contact-name">NAME</label>
             <input id="contact-name" name="お名前" type="text" autocomplete="name" required>
@@ -1093,6 +1093,42 @@
         showProductLoadError(error);
       }
     })();
+
+    // CONTACT mail composition (design and fields unchanged)
+    const contactForm = document.getElementById('contactForm');
+    if (contactForm) {
+      contactForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+
+        const name = document.getElementById('contact-name')?.value.trim() || '';
+        const email = document.getElementById('contact-email')?.value.trim() || '';
+        const message = document.getElementById('contact-message')?.value.trim() || '';
+
+        const subject = name
+          ? `Luna お問い合わせ｜${name}様`
+          : 'Luna お問い合わせ';
+
+        const body = [
+          'Lunaホームページよりお問い合わせがありました。',
+          '',
+          '━━━━━━━━━━━━━━',
+          '',
+          'お名前',
+          name,
+          '',
+          'メールアドレス',
+          email,
+          '',
+          'お問い合わせ内容',
+          message,
+          '',
+          '━━━━━━━━━━━━━━'
+        ].join('\\r\\n');
+
+        const mailtoUrl = `mailto:luna.handmade813@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        window.location.href = mailtoUrl;
+      });
+    }
 
     /*
       SITE IMAGE MANAGEMENT
