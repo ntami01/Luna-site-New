@@ -1108,22 +1108,7 @@
           ? `Luna お問い合わせ｜${name}様`
           : 'Luna お問い合わせ';
 
-        const body = [
-          'Lunaホームページよりお問い合わせがありました。',
-          '',
-          '━━━━━━━━━━━━━━',
-          '',
-          'お名前',
-          name,
-          '',
-          'メールアドレス',
-          email,
-          '',
-          'お問い合わせ内容',
-          message,
-          '',
-          '━━━━━━━━━━━━━━'
-        ].join('\\r\\n');
+        const body = message;
 
         const mailtoUrl = `mailto:luna.handmade813@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
         window.location.href = mailtoUrl;
